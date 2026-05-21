@@ -1040,33 +1040,6 @@ export default function App() {
           }}
         />
 
-        {/* floating emojis */}
-        {[
-          { e: "🎂", t: "14%", l: "7%", s: 38, d: 0 },
-          { e: "🎉", t: "22%", r: "8%", s: 30, d: 1 },
-          { e: "🎈", b: "18%", l: "6%", s: 26, d: 0.5 },
-          { e: "⭐", b: "28%", r: "9%", s: 34, d: 1.5 },
-          { e: "🕊️", t: "8%", l: "45%", s: 22, d: 0.8 },
-        ].map((f, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              top: f.t,
-              bottom: f.b,
-              left: f.l,
-              right: f.r,
-              fontSize: f.s,
-              animation: `float ${3 + f.d}s ${f.d}s ease-in-out infinite`,
-              zIndex: 2,
-              opacity: 0.55,
-              pointerEvents: "none",
-            }}
-          >
-            {f.e}
-          </div>
-        ))}
-
         <div
           style={{
             position: "relative",

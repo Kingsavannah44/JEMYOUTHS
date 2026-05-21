@@ -1,7 +1,24 @@
-﻿node_modules/
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Run-app (old Vite demo)
 run-app/node_modules/
 run-app/dist/
 run-app/.vite/
+
+# Environment & logs
 .env
-.DS_Store
 *.log
+dev.err
+dev.log
+
+# OS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Vercel
+.vercel/

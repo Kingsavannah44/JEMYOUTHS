@@ -1,0 +1,14 @@
+{
+  "name": "jem-youths",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "npx esbuild main.js --bundle --outfile=dist/app.js --format=esm --jsx=automatic --minify --define:process.env.NODE_ENV=\\\"production\\\"",
+    "preview": "npx serve dist"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "serve": "^14.2.1"
+  }
+}

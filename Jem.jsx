@@ -727,10 +727,10 @@ export default function App() {
 
   // Hero background carousel (local images)
   const heroImages = [
-    "/Images/New.png",
-    "/Images/New2.png",
-    "/Images/New3.png",
-    "/Images/New5.png",
+    "/images/New.png",
+    "/images/New2.png",
+    "/images/New3.png",
+    "/images/New5.png",
   ];
   const [heroIndex, setHeroIndex] = useState(0);
   useEffect(() => {
@@ -937,7 +937,26 @@ export default function App() {
         .bcard:hover{transform:perspective(500px) translateY(-8px) scale(1.02)!important;box-shadow:0 20px 48px rgba(124,58,237,0.3)!important}
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:#07010f}::-webkit-scrollbar-thumb{background:#7c3aed;border-radius:99px}
         .acc-btn:hover{background:rgba(124,58,237,0.12)!important}
+        .nav-link:hover { color: #fff !important; background: rgba(255,255,255,0.08); border-radius: 8px; }
+        footer a:hover { color: #c4b5fd !important; }
       `}</style>
+
+      {/* Navigation Bar with hover effects */}
+      <nav style={{ position:"fixed", top:0, left:0, right:0, zIndex:100, background:"rgba(7,1,15,0.92)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(167,139,250,0.15)" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 1.5rem", height:68, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <a href="#hero" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none", color:"#fff" }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#7c3aed,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>✝️</div>
+            <div style={{ fontWeight:900, fontSize:18 }}>JEM YOUTHS</div>
+          </a>
+          <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:14, fontWeight:600 }}>
+            {[{label:"Home", href:"#hero"}, {label:"About", href:"#about"}, {label:"Roster", href:"#roster"}, {label:"Register", href:"#register"}, {label:"Give", href:"#give"}].map(item => (
+              <a key={item.label} href={item.href} className="nav-link" style={{ padding:"8px 14px", color:"#cbd5e1", textDecoration:"none", transition:"all 0.2s" }}>{item.label}</a>
+            ))}
+            <button onClick={handleAdminButtonClick} className="nav-link" style={{ padding:"8px 16px", marginLeft:8, background:"linear-gradient(135deg,#7c3aed,#0ea5e9)", border:"none", color:"#fff", borderRadius:8, fontWeight:700, cursor:"pointer", fontSize:13 }}>Admin</button>
+          </div>
+        </div>
+      </nav>
+      <div style={{ height:68 }} />
 
       {/* confetti */}
       {confetti && (
@@ -978,7 +997,7 @@ export default function App() {
       )}
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section
+      <section id="hero"
         style={{
           position: "relative",
           minHeight: "100vh",
@@ -1262,7 +1281,7 @@ export default function App() {
       </section>
 
       {/* ── BIRTHDAY ROSTER ──────────────────────────────────── */}
-      <section
+      <section id="roster"
         style={{
           background: "#0b0120",
           padding: "5rem 0 0",
@@ -1477,7 +1496,7 @@ export default function App() {
       </section>
 
       {/* ── FORMS SECTION ────────────────────────────────────── */}
-      <section
+      <section id="register"
         style={{
           background: "#0b0120",
           padding: "2rem 0 0",
@@ -2279,7 +2298,7 @@ export default function App() {
       </section>
 
       {/* ── GIVE / DONATE ───────────────────────────────────── */}
-      <section style={{ background:"#07010f", padding:"5rem 1.5rem", position:"relative", zIndex:2, borderTop:"1px solid rgba(124,58,237,0.15)" }}>
+      <section id="give" style={{ background:"#07010f", padding:"5rem 1.5rem", position:"relative", zIndex:2, borderTop:"1px solid rgba(124,58,237,0.15)" }}>
         <div style={{ maxWidth:820, margin:"0 auto", textAlign:"center" }}>
           <div style={{ fontSize:12, color:"#7c3aed", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>❤️ GIVING</div>
           <h2 style={{ fontSize:"clamp(1.8rem,5vw,2.5rem)", fontWeight:900, color:"#fff", marginBottom:"0.75rem" }}>Support the Mission</h2>
@@ -2327,57 +2346,113 @@ export default function App() {
       <footer
         style={{
           background: "#040009",
-          padding: "3.5rem 1.25rem 2.5rem",
-          textAlign: "center",
+          paddingTop: "3rem",
+          paddingBottom: "2rem",
           position: "relative",
           zIndex: 2,
           borderTop: "1px solid rgba(124,58,237,0.2)",
         }}
       >
-        <div
-          style={{
-            height: 2,
-            background:
-              "linear-gradient(90deg,transparent,#7c3aed50,#0ea5e950,transparent)",
-            marginBottom: "2rem",
-          }}
-        />
-        <div
-          style={{
-            fontSize: 36,
-            marginBottom: 14,
-            animation: "float 3s ease-in-out infinite",
-          }}
-        >
-          ✝️
-        </div>
-        <div
-          style={{
-            fontWeight: 900,
-            fontSize: 24,
-            color: "#fff",
-            marginBottom: 6,
-          }}
-        >
-          JEM YOUTHS
-        </div>
-        <div style={{ fontSize: 14, color: "#4b5563", marginBottom: "1.5rem" }}>
-          Celebrating life, faith, and community. One birthday at a time.
-        </div>
-        <div style={{ fontSize: 13, color: "#6b21a8" }}>
-          Made with <span style={{ color: "#f97316", fontSize: 15 }}>♥</span> by{" "}
-          <span
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "0 1.5rem" }}>
+          <div
             style={{
-              fontWeight: 900,
-              fontSize: 15,
-              background: "linear-gradient(135deg,#a855f7,#38bdf8)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "2.5rem",
+              paddingBottom: "2.5rem",
             }}
           >
-            KINGSAVANNAH44
-          </span>{" "}
-          · {new Date().getFullYear()}
+            {/* Brand */}
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <span style={{ fontSize: 28 }}>✝️</span>
+                <span style={{ fontWeight: 900, fontSize: 21, color: "#fff", letterSpacing: "-0.02em" }}>
+                  JEM YOUTHS
+                </span>
+              </div>
+              <p style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.55, maxWidth: 260 }}>
+                A vibrant faith community celebrating every young life with joy, worship, and meaningful connections.
+              </p>
+            </div>
+
+            {/* Explore */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", letterSpacing: "0.08em", marginBottom: 14 }}>
+                EXPLORE
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14.5 }}>
+                <a href="#hero" style={{ color: "#94a3b8", textDecoration: "none" }}>Home</a>
+                <a href="#about" style={{ color: "#94a3b8", textDecoration: "none" }}>Our Story</a>
+                <a href="#roster" style={{ color: "#94a3b8", textDecoration: "none" }}>Birthday Roster</a>
+                <a href="#register" style={{ color: "#94a3b8", textDecoration: "none" }}>Get Registered</a>
+              </div>
+            </div>
+
+            {/* Get Involved */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", letterSpacing: "0.08em", marginBottom: 14 }}>
+                GET INVOLVED
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14.5 }}>
+                <a href="#give" style={{ color: "#94a3b8", textDecoration: "none" }}>Support the Mission</a>
+                <a href="#" style={{ color: "#94a3b8", textDecoration: "none" }}>Join Our WhatsApp</a>
+                <a href="#" style={{ color: "#94a3b8", textDecoration: "none" }}>Volunteer With Us</a>
+                <a href="#" style={{ color: "#94a3b8", textDecoration: "none" }}>Upcoming Events</a>
+              </div>
+            </div>
+
+            {/* Connect */}
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", letterSpacing: "0.08em", marginBottom: 14 }}>
+                CONNECT
+              </div>
+
+              <div style={{ display: "flex", gap: 14, marginBottom: 16, fontSize: 18 }}>
+                <span style={{ cursor: "pointer", opacity: 0.85 }}>📘</span>
+                <span style={{ cursor: "pointer", opacity: 0.85 }}>📷</span>
+                <span style={{ cursor: "pointer", opacity: 0.85 }}>💬</span>
+                <span style={{ cursor: "pointer", opacity: 0.85 }}>▶️</span>
+              </div>
+
+              <div style={{ fontSize: 13.5, color: "#64748b", lineHeight: 1.6 }}>
+                Nairobi, Kenya<br />
+                <a href="tel:+254769137307" style={{ color: "#94a3b8", textDecoration: "none" }}>+254 769 137 307</a><br />
+                <a href="https://jemkenya.org" target="_blank" style={{ color: "#a5b4fc", textDecoration: "none" }}>info@jemkenya.org</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+            marginTop: "1.5rem",
+            paddingTop: "1.25rem",
+            paddingLeft: "1.5rem",
+            paddingRight: "1.5rem",
+            maxWidth: 1200,
+            margin: "0 auto",
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            fontSize: 12.5,
+            color: "#475569",
+          }}
+        >
+          <div>
+            © {new Date().getFullYear()} JEM Youths Ministry. All rights reserved.
+          </div>
+          <div style={{ display: "flex", gap: 18 }}>
+            <span style={{ cursor: "pointer" }}>Privacy</span>
+            <span style={{ cursor: "pointer" }}>Terms</span>
+            <span style={{ cursor: "pointer" }}>Accessibility</span>
+          </div>
+          <div style={{ color: "#64748b" }}>
+            Crafted with faith &amp; ❤️ for the next generation
+          </div>
         </div>
       </footer>
 

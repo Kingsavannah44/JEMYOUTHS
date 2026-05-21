@@ -5,6 +5,10 @@ import {
   doc, setDoc, getDocs,
 } from "firebase/firestore";
 
+import Scene3D from "./components/Scene3D";
+import TiltCard from "./components/TiltCard";
+import Reveal from "./components/Reveal";
+
 // ── constants ────────────────────────────────────────────────────────────────
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS   = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -43,409 +47,6 @@ function randomParticle() {
     rotation:Math.random()*360, shape:Math.random()>0.5?"rect":"circle",
     color:["#a855f7","#38bdf8","#f97316","#34d399","#fb7185","#fbbf24"][Math.floor(Math.random()*6)],
   };
-}
-
-// ── 3-D Canvas Scene ─────────────────────────────────────────────────────────
-function Scene3D() {
-  const canvasRef = useRef(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    let W, H, raf;
-    const resize = () => { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; };
-    resize();
-    window.addEventListener("resize", resize);
-
-    // orbs
-    const orbs = Array.from({length:14}, (_, i) => ({
-      x: Math.random() * 800, y: Math.random() * 500, z: Math.random() * 400 + 100,
-      r: 18 + Math.random() * 30,
-      vx: (Math.random()-.5)*0.4, vy: (Math.random()-.5)*0.3,
-      phase: Math.random()*Math.PI*2,
-      hue: [270,200,25,160,340][i%5],
-    }));
-
-    // stars
-    const stars = Array.from({length:120}, () => ({
-      x: Math.random(), y: Math.random(),
-      r: Math.random()*1.4+0.2, alpha: Math.random()*0.6+0.2,
-      twinkle: Math.random()*Math.PI*2,
-    }));
-
-    // 3-D cross vertices (simple wireframe)
-    const cross3D = { rx:0, ry:0, rz:0 };
-
-    let t = 0;
-    const draw = () => {
-      t += 0.006;
-      ctx.clearRect(0,0,W,H);
-
-      // stars
-      stars.forEach(s => {
-        s.twinkle += 0.02;
-        const a = s.alpha * (0.6 + 0.4*Math.sin(s.twinkle));
-        ctx.beginPath();
-        ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(255,255,255,${a})`;
-        ctx.fill();
-      });
-
-      // grid lines — gives 3-D floor feel
-      ctx.save();
-      const gAlpha = 0.07;
-      const perspective = 600;
-      const horizon = H * 0.65;
-      for (let gx = -5; gx <= 5; gx++) {
-        const wx = W/2 + gx * 60;
-        ctx.beginPath();
-        ctx.moveTo(W/2 + (wx - W/2) * 0.01, horizon);
-        ctx.lineTo(wx, H + 80);
-        ctx.strokeStyle = `rgba(124,58,237,${gAlpha})`;
-        ctx.lineWidth = 0.7;
-        ctx.stroke();
-      }
-      for (let gy = 0; gy <= 8; gy++) {
-        const fy = gy / 8;
-        const y = horizon + (H+80-horizon)*fy;
-        const spread = (W * 0.5) * fy;
-        ctx.beginPath();
-        ctx.moveTo(W/2 - spread, y);
-        ctx.lineTo(W/2 + spread, y);
-        ctx.strokeStyle = `rgba(124,58,237,${gAlpha * fy})`;
-        ctx.lineWidth = 0.7;
-        ctx.stroke();
-      }
-      ctx.restore();
-
-      // orbs with 3-D depth
-      orbs.forEach(o => {
-        o.phase += 0.012;
-        o.x += o.vx; o.y += o.vy;
-        if (o.x < 0 || o.x > 800) o.vx *= -1;
-        if (o.y < 0 || o.y > 500) o.vy *= -1;
-        const px = (o.x / 800) * W;
-        const py = (o.y / 500) * H * 0.7;
-        const depth = (o.z / 500);
-        const sr = o.r * depth * (W / 600);
-        const pulse = 1 + 0.12 * Math.sin(o.phase);
-        const fr = sr * pulse;
-        const grad = ctx.createRadialGradient(px - fr*0.3, py - fr*0.3, 0, px, py, fr*1.4);
-        grad.addColorStop(0, `hsla(${o.hue},90%,75%,${0.45*depth})`);
-        grad.addColorStop(0.5, `hsla(${o.hue},80%,55%,${0.25*depth})`);
-        grad.addColorStop(1, `hsla(${o.hue},70%,40%,0)`);
-        ctx.beginPath();
-        ctx.arc(px, py, fr*1.4, 0, Math.PI*2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        // specular highlight
-        ctx.beginPath();
-        ctx.arc(px - fr*0.35, py - fr*0.35, fr*0.28, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(255,255,255,${0.18*depth})`;
-        ctx.fill();
-      });
-
-      // 3-D rotating cross wireframe
-      cross3D.ry = t * 0.5;
-      cross3D.rx = Math.sin(t * 0.3) * 0.3;
-      const cx = W * 0.82, cy = H * 0.22, cScale = Math.min(W,H) * 0.07;
-      const pts = [
-        [-1,-3,0],[1,-3,0],[1,-1,0],[3,-1,0],[3,1,0],[1,1,0],[1,3,0],
-        [-1,3,0],[-1,1,0],[-3,1,0],[-3,-1,0],[-1,-1,0],
-      ];
-      function project([x,y,z]) {
-        const cos = Math.cos, sin = Math.sin;
-        const rx = cross3D.rx, ry = cross3D.ry;
-        let x1=x*cos(ry)-z*sin(ry), z1=x*sin(ry)+z*cos(ry);
-        let y1=y*cos(rx)-z1*sin(rx), z2=y*sin(rx)+z1*cos(rx);
-        const fov = 5; const pz = fov + z2*0.3;
-        return [cx + (x1/pz)*cScale*fov, cy + (y1/pz)*cScale*fov, z2];
-      }
-      const projected = pts.map(project);
-      ctx.save();
-      ctx.beginPath();
-      projected.forEach(([px,py], i) => i===0 ? ctx.moveTo(px,py) : ctx.lineTo(px,py));
-      ctx.closePath();
-      const crossGrad = ctx.createLinearGradient(cx-cScale,cy-cScale*3,cx+cScale,cy+cScale*3);
-      crossGrad.addColorStop(0,"rgba(167,139,250,0.7)");
-      crossGrad.addColorStop(0.5,"rgba(56,189,248,0.5)");
-      crossGrad.addColorStop(1,"rgba(249,115,22,0.4)");
-      ctx.strokeStyle = crossGrad;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = "rgba(124,58,237,0.08)";
-      ctx.fill();
-      ctx.restore();
-
-      raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize",resize); };
-  }, []);
-  return <canvas ref={canvasRef} style={{ position:"absolute", inset:0, width:"100%", height:"100%", zIndex:1 }} />;
-}
-
-// ── Tilt Card ────────────────────────────────────────────────────────────────
-function TiltCard({ children, style }) {
-  const ref = useRef(null);
-  const onMove = (e) => {
-    const el = ref.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width/2, cy = r.top + r.height/2;
-    const ex = (e.touches?.[0]?.clientX ?? e.clientX), ey = (e.touches?.[0]?.clientY ?? e.clientY);
-    const dx = (ex-cx)/(r.width/2), dy = (ey-cy)/(r.height/2);
-    el.style.transform = `perspective(600px) rotateY(${dx*8}deg) rotateX(${-dy*6}deg) scale(1.03)`;
-  };
-  const onLeave = () => { if (ref.current) ref.current.style.transform = "perspective(600px) rotateY(0) rotateX(0) scale(1)"; };
-  return (
-    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave} onTouchMove={onMove} onTouchEnd={onLeave}
-      style={{ transformStyle:"preserve-3d", transition:"transform 0.15s ease", willChange:"transform", ...style }}>
-      {children}
-    </div>
-  );
-}
-
-// ── Scroll Reveal ────────────────────────────────────────────────────────────
-function Reveal({ children, delay=0 }) {
-  const ref = useRef(null);
-  const [vis, setVis] = useState(false);
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVis(true); obs.disconnect(); } }, { threshold:0.12 });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return (
-    <div ref={ref} style={{
-      opacity: vis ? 1 : 0, transform: vis ? "none" : "translateY(36px) scale(0.97)",
-      transition: `opacity 0.7s ${delay}s ease, transform 0.7s ${delay}s ease`,
-    }}>
-      {children}
-    </div>
-  );
-}
-
-// ── Admin Dashboard Page ─────────────────────────────────────────────────────
-function AdminDashboard({ members, onLogout, onAdd, onDelete, onEdit, showToast }) {
-  const [adminForm, setAdminForm] = useState({ name:"", dob:"" });
-  const [adminErrors, setAdminErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [search, setSearch] = useState("");
-  const [editId, setEditId] = useState(null);
-  const [editName, setEditName] = useState("");
-  const [editDob, setEditDob] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
-
-  const now = new Date();
-  const CM = now.getMonth();
-  const NM = CM === 11 ? 0 : CM + 1;
-  const thisMonth = members.filter(m => new Date(m.dob).getMonth() === CM);
-  const nextMonth = members.filter(m => new Date(m.dob).getMonth() === NM);
-  const filtered = members.filter(m => m.name.toLowerCase().includes(search.toLowerCase()));
-
-  const inp = {
-    width:"100%", background:"rgba(255,255,255,0.07)", border:"1px solid rgba(167,139,250,0.25)",
-    borderRadius:10, padding:"11px 14px", fontSize:14, color:"#fff", outline:"none",
-    boxSizing:"border-box", colorScheme:"dark", fontFamily:"'Nunito',sans-serif",
-  };
-  const lbl = { display:"block", fontSize:11, fontWeight:700, color:"#94a3b8", marginBottom:5, letterSpacing:"0.08em", textTransform:"uppercase" };
-
-  const validateAdmin = () => {
-    const e = {};
-    if (!adminForm.name.trim()) e.name = "Name required";
-    if (!adminForm.dob) e.dob = "Date required";
-    setAdminErrors(e); return !Object.keys(e).length;
-  };
-  const handleAdd = async () => {
-    if (!validateAdmin()) return;
-    setSubmitting(true);
-    await onAdd(adminForm.name.trim(), adminForm.dob);
-    setAdminForm({ name:"", dob:"" });
-    setSubmitting(false);
-  };
-  const startEdit = m => { setEditId(m.id); setEditName(m.name); setEditDob(m.dob); };
-  const saveEdit = async () => { await onEdit(editId, editName, editDob); setEditId(null); };
-
-  const statCards = [
-    { label:"Total Members", val:members.length, icon:"👥", color:"#7c3aed", bg:"rgba(124,58,237,0.12)" },
-    { label:`${MONTHS[CM]} Birthdays`, val:thisMonth.length, icon:"🎂", color:"#0ea5e9", bg:"rgba(14,165,233,0.12)" },
-    { label:`${MONTHS[NM]} Upcoming`, val:nextMonth.length, icon:"📆", color:"#10b981", bg:"rgba(16,185,129,0.12)" },
-    { label:"This Week", val:members.filter(m=>{ const d=new Date(m.dob); const t=new Date(); return d.getMonth()===t.getMonth()&&Math.abs(d.getDate()-t.getDate())<=7; }).length, icon:"⭐", color:"#f97316", bg:"rgba(249,115,22,0.12)" },
-  ];
-
-  const tabs = [{key:"overview",label:"Overview",icon:"📊"},{key:"members",label:"Members",icon:"👥"},{key:"add",label:"Add Member",icon:"➕"}];
-
-  return (
-    <div style={{ minHeight:"100vh", background:"#07010f", fontFamily:"'Nunito',sans-serif", color:"#f1f0fe" }}>
-      {/* Dashboard Navbar */}
-      <nav style={{ background:"rgba(10,2,20,0.98)", borderBottom:"1px solid rgba(124,58,237,0.25)", padding:"0 2rem", height:64, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:50, backdropFilter:"blur(20px)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#7c3aed,#0ea5e9)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18 }}>🛡️</div>
-          <div>
-            <div style={{ fontWeight:900, fontSize:16, color:"#fff", letterSpacing:"-0.01em" }}>ADMIN DASHBOARD</div>
-            <div style={{ fontSize:10, color:"#7c3aed", fontWeight:700, letterSpacing:"0.1em" }}>JEM YOUTHS · RESTRICTED</div>
-          </div>
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <div style={{ fontSize:12, color:"#94a3b8", background:"rgba(52,211,153,0.1)", border:"1px solid rgba(52,211,153,0.3)", borderRadius:8, padding:"4px 12px", display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:"#34d399", display:"inline-block", animation:"pulse 1.5s infinite" }} />
-            AUTHENTICATED
-          </div>
-          <button onClick={onLogout} style={{ padding:"8px 18px", borderRadius:9, background:"rgba(239,68,68,0.12)", border:"1px solid rgba(239,68,68,0.3)", color:"#f87171", fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.06em", textTransform:"uppercase" }}>
-            Sign Out
-          </button>
-        </div>
-      </nav>
-
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"2rem 1.5rem" }}>
-        {/* Tab nav */}
-        <div style={{ display:"flex", gap:6, marginBottom:"2rem", background:"rgba(255,255,255,0.03)", borderRadius:14, padding:5, border:"1px solid rgba(255,255,255,0.07)", width:"fit-content" }}>
-          {tabs.map(t => (
-            <button key={t.key} onClick={()=>setActiveTab(t.key)} style={{
-              padding:"9px 20px", borderRadius:10, fontSize:13, fontWeight:800, cursor:"pointer",
-              border:"none", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.05em",
-              background: activeTab===t.key ? "linear-gradient(135deg,#7c3aed,#0ea5e9)" : "transparent",
-              color: activeTab===t.key ? "#fff" : "#64748b",
-              transition:"all 0.2s", display:"flex", alignItems:"center", gap:6,
-            }}>{t.icon} {t.label}</button>
-          ))}
-        </div>
-
-        {/* OVERVIEW TAB */}
-        {activeTab==="overview" && (
-          <div>
-            {/* Stat cards */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:16, marginBottom:"2rem" }}>
-              {statCards.map(s => (
-                <div key={s.label} style={{ background:s.bg, border:`1px solid ${s.color}30`, borderRadius:16, padding:"1.25rem 1.5rem", display:"flex", alignItems:"center", gap:14 }}>
-                  <div style={{ width:48, height:48, borderRadius:12, background:`${s.color}20`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{s.icon}</div>
-                  <div>
-                    <div style={{ fontSize:28, fontWeight:900, color:"#fff", lineHeight:1 }}>{s.val}</div>
-                    <div style={{ fontSize:12, color:"#94a3b8", marginTop:3, fontWeight:600 }}>{s.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* This month birthdays */}
-            <div style={{ background:"rgba(255,255,255,0.02)", border:"1px solid rgba(167,139,250,0.15)", borderRadius:18, padding:"1.5rem" }}>
-              <div style={{ fontWeight:800, fontSize:16, color:"#fff", marginBottom:"1rem", display:"flex", alignItems:"center", gap:8 }}>🎂 {MONTHS[CM]} Birthdays</div>
-              {thisMonth.length === 0 ? (
-                <div style={{ color:"#4b5563", fontSize:14, textAlign:"center", padding:"2rem" }}>No birthdays this month.</div>
-              ) : (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))", gap:10 }}>
-                  {thisMonth.map(m => {
-                    const color = avatarColor(m.name);
-                    const d = new Date(m.dob);
-                    return (
-                      <div key={m.id} style={{ background:`${color}10`, border:`1px solid ${color}25`, borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:10 }}>
-                        <div style={{ width:36, height:36, borderRadius:"50%", background:`linear-gradient(135deg,${color},${color}99)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900, color:"#fff", flexShrink:0 }}>{initials(m.name)}</div>
-                        <div>
-                          <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>{m.name}</div>
-                          <div style={{ fontSize:11, color:"#94a3b8" }}>{MONTHS[d.getMonth()]} {d.getDate()}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* MEMBERS TAB */}
-        {activeTab==="members" && (
-          <div>
-            <div style={{ marginBottom:"1rem" }}>
-              <input style={inp} type="text" placeholder="🔍 Search members…" value={search} onChange={e=>setSearch(e.target.value)} />
-            </div>
-            <div style={{ overflowX:"auto", borderRadius:14, border:"1px solid rgba(255,255,255,0.07)" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
-                <thead>
-                  <tr style={{ background:"rgba(124,58,237,0.1)" }}>
-                    {["MEMBER","BIRTHDAY","MONTH","ACTIONS"].map(h=>(
-                      <th key={h} style={{ padding:"13px 16px", textAlign:"left", color:"#64748b", fontSize:11, fontWeight:700, borderBottom:"1px solid rgba(255,255,255,0.07)", letterSpacing:"0.08em" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length===0 && (
-                    <tr><td colSpan={4} style={{ padding:32, textAlign:"center", color:"#4b5563" }}>No members found.</td></tr>
-                  )}
-                  {filtered.map((m,ri) => {
-                    const d = new Date(m.dob), color = avatarColor(m.name), isEdit = editId===m.id;
-                    return (
-                      <tr key={m.id} style={{ background:ri%2===0?"rgba(255,255,255,0.02)":"transparent", transition:"background 0.15s" }}
-                        onMouseEnter={e=>e.currentTarget.style.background="rgba(124,58,237,0.06)"}
-                        onMouseLeave={e=>e.currentTarget.style.background=ri%2===0?"rgba(255,255,255,0.02)":"transparent"}>
-                        <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", verticalAlign:"middle" }}>
-                          {isEdit ? <input style={{...inp,padding:"7px 10px",fontSize:13}} value={editName} onChange={e=>setEditName(e.target.value)} />
-                          : <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                              <div style={{ width:34,height:34,borderRadius:"50%",background:`linear-gradient(135deg,${color},${color}99)`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:900,color:"#fff",flexShrink:0 }}>{initials(m.name)}</div>
-                              <span style={{ fontWeight:700, color:"#e2e8f0" }}>{m.name}</span>
-                            </div>}
-                        </td>
-                        <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", color:"#94a3b8", verticalAlign:"middle" }}>
-                          {isEdit ? <input style={{...inp,padding:"7px 10px",fontSize:13}} type="date" value={editDob} onChange={e=>setEditDob(e.target.value)} />
-                          : `${MONTHS[d.getMonth()]} ${d.getDate()}`}
-                        </td>
-                        <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", verticalAlign:"middle" }}>
-                          <span style={{ background:`${color}18`,border:`1px solid ${color}35`,borderRadius:99,padding:"3px 12px",fontSize:12,color }}>{MONTHS[d.getMonth()]}</span>
-                        </td>
-                        <td style={{ padding:"12px 16px", borderBottom:"1px solid rgba(255,255,255,0.04)", verticalAlign:"middle" }}>
-                          <div style={{ display:"flex", gap:6 }}>
-                            {isEdit ? (
-                              <>
-                                <button style={{ padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid #34d39940",background:"#34d39915",color:"#34d399",fontFamily:"'Nunito',sans-serif" }} onClick={saveEdit}>Save</button>
-                                <button style={{ padding:"6px 14px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"#94a3b8",fontFamily:"'Nunito',sans-serif" }} onClick={()=>setEditId(null)}>Cancel</button>
-                              </>
-                            ) : (
-                              <>
-                                <button style={{ padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid #38bdf840",background:"#38bdf815",color:"#38bdf8",fontFamily:"'Nunito',sans-serif" }} onClick={()=>startEdit(m)}>✏️ Edit</button>
-                                <button style={{ padding:"6px 12px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",border:"1px solid #f8717140",background:"#f8717115",color:"#f87171",fontFamily:"'Nunito',sans-serif" }} onClick={()=>onDelete(m.id)}>🗑 Delete</button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ fontSize:12, color:"#4b5563", marginTop:10, textAlign:"right" }}>{filtered.length} of {members.length} members</div>
-          </div>
-        )}
-
-        {/* ADD MEMBER TAB */}
-        {activeTab==="add" && (
-          <div style={{ maxWidth:480 }}>
-            <div style={{ background:"rgba(124,58,237,0.06)", border:"1px solid rgba(167,139,250,0.2)", borderRadius:18, padding:"2rem" }}>
-              <div style={{ fontWeight:900, fontSize:18, color:"#fff", marginBottom:"1.5rem" }}>➕ Add New Member</div>
-              <div style={{ marginBottom:14 }}>
-                <label style={lbl}>Full Name</label>
-                <input style={{...inp,...(adminErrors.name?{borderColor:"#f87171"}:{})}} type="text" placeholder="e.g. Grace Akinyi" value={adminForm.name}
-                  onChange={e=>{setAdminForm(f=>({...f,name:e.target.value}));setAdminErrors(x=>({...x,name:""}));}} />
-                {adminErrors.name && <div style={{ fontSize:12,color:"#f87171",marginTop:4 }}>{adminErrors.name}</div>}
-              </div>
-              <div style={{ marginBottom:24 }}>
-                <label style={lbl}>Birthdate</label>
-                <input style={{...inp,...(adminErrors.dob?{borderColor:"#f87171"}:{})}} type="date" value={adminForm.dob}
-                  onChange={e=>{setAdminForm(f=>({...f,dob:e.target.value}));setAdminErrors(x=>({...x,dob:""}));}} />
-                {adminErrors.dob && <div style={{ fontSize:12,color:"#f87171",marginTop:4 }}>{adminErrors.dob}</div>}
-              </div>
-              <button onClick={handleAdd} disabled={submitting} style={{
-                width:"100%", padding:"13px", borderRadius:12, fontWeight:800, fontSize:15, border:"none",
-                background: submitting ? "rgba(124,58,237,0.3)" : "linear-gradient(135deg,#7c3aed,#0ea5e9)",
-                color: submitting ? "#6b7280" : "#fff", cursor: submitting ? "not-allowed" : "pointer",
-                fontFamily:"'Nunito',sans-serif", boxShadow:"0 6px 20px rgba(124,58,237,0.35)",
-              }}>{submitting ? "Adding…" : "➕ Add Member"}</button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 // ── Admin Login Modal ─────────────────────────────────────────────────────────
@@ -1131,20 +732,91 @@ export default function App() {
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
       <footer style={{
-        background:"#040009", padding:"3.5rem 1.25rem 2.5rem", textAlign:"center",
+        background:"#040009", paddingTop:"3rem", paddingBottom:"2rem",
         position:"relative", zIndex:2, borderTop:"1px solid rgba(124,58,237,0.2)",
       }}>
-        <div style={{ height:2, background:"linear-gradient(90deg,transparent,#7c3aed50,#0ea5e950,transparent)", marginBottom:"2rem" }} />
-        <div style={{ fontSize:36, marginBottom:14, animation:"float 3s ease-in-out infinite" }}>✝️</div>
-        <div style={{ fontWeight:900, fontSize:24, color:"#fff", marginBottom:6 }}>JEM Youths</div>
-        <div style={{ fontSize:14, color:"#4b5563", marginBottom:"1.5rem" }}>
-          Celebrating life, faith, and community. One birthday at a time.
+        <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 1.5rem" }}>
+          <div style={{
+            display:"grid",
+            gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",
+            gap:"2.5rem",
+            paddingBottom:"2.5rem"
+          }}>
+            {/* Brand */}
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14 }}>
+                <span style={{ fontSize:28 }}>✝️</span>
+                <span style={{ fontWeight:900, fontSize:21, color:"#fff", letterSpacing:"-0.02em" }}>JEM YOUTHS</span>
+              </div>
+              <p style={{ fontSize:13.5, color:"#64748b", lineHeight:1.55, maxWidth:260 }}>
+                A vibrant faith community celebrating every young life with joy, worship, and meaningful connections.
+              </p>
+            </div>
+
+            {/* Explore */}
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#c4b5fd", letterSpacing:"0.08em", marginBottom:14 }}>EXPLORE</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8, fontSize:14.5 }}>
+                <a href="#hero" style={{ color:"#94a3b8", textDecoration:"none" }}>Home</a>
+                <a href="#about" style={{ color:"#94a3b8", textDecoration:"none" }}>Our Story</a>
+                <a href="#roster" style={{ color:"#94a3b8", textDecoration:"none" }}>Birthday Roster</a>
+                <a href="#register" style={{ color:"#94a3b8", textDecoration:"none" }}>Get Registered</a>
+              </div>
+            </div>
+
+            {/* Get Involved */}
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#c4b5fd", letterSpacing:"0.08em", marginBottom:14 }}>GET INVOLVED</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8, fontSize:14.5 }}>
+                <a href="#give" style={{ color:"#94a3b8", textDecoration:"none" }}>Support the Mission</a>
+                <a href="#" style={{ color:"#94a3b8", textDecoration:"none" }}>Join Our WhatsApp</a>
+                <a href="#" style={{ color:"#94a3b8", textDecoration:"none" }}>Volunteer With Us</a>
+                <a href="#" style={{ color:"#94a3b8", textDecoration:"none" }}>Upcoming Events</a>
+              </div>
+            </div>
+
+            {/* Connect */}
+            <div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#c4b5fd", letterSpacing:"0.08em", marginBottom:14 }}>CONNECT</div>
+              <div style={{ display:"flex", gap:14, marginBottom:16, fontSize:18 }}>
+                <span style={{ cursor:"pointer", opacity:0.85 }}>📘</span>
+                <span style={{ cursor:"pointer", opacity:0.85 }}>📷</span>
+                <span style={{ cursor:"pointer", opacity:0.85 }}>💬</span>
+                <span style={{ cursor:"pointer", opacity:0.85 }}>▶️</span>
+              </div>
+              <div style={{ fontSize:13.5, color:"#64748b", lineHeight:1.6 }}>
+                Nairobi, Kenya<br />
+                <a href="tel:+254769137307" style={{ color:"#94a3b8", textDecoration:"none" }}>+254 769 137 307</a><br />
+                <a href="https://jemkenya.org" target="_blank" style={{ color:"#a5b4fc", textDecoration:"none" }}>info@jemkenya.org</a>
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize:13, color:"#94a3b8" }}>
-          Made with <span style={{ fontSize:15 }}>❤️</span> by{" "}
-          <span style={{ fontWeight:900, fontSize:15, background:"linear-gradient(135deg,#a855f7,#38bdf8)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>
-            KINGSAVANNAH44
-          </span>{" "}· {new Date().getFullYear()}
+
+        {/* Bottom bar */}
+        <div style={{
+          borderTop:"1px solid rgba(255,255,255,0.08)",
+          marginTop:"1.5rem",
+          paddingTop:"1.25rem",
+          paddingLeft:"1.5rem",
+          paddingRight:"1.5rem",
+          maxWidth:1200,
+          margin:"0 auto",
+          display:"flex",
+          flexWrap:"wrap",
+          justifyContent:"space-between",
+          alignItems:"center",
+          gap:12,
+          fontSize:12.5,
+          color:"#475569"
+        }}>
+          <div>© {new Date().getFullYear()} JEM Youths Ministry. All rights reserved.</div>
+          <div style={{ display:"flex", gap:18 }}>
+            <span style={{ cursor:"pointer" }}>Privacy</span>
+            <span style={{ cursor:"pointer" }}>Terms</span>
+            <span style={{ cursor:"pointer" }}>Accessibility</span>
+          </div>
+          <div style={{ color:"#64748b" }}>Crafted with faith &amp; ❤️ for the next generation</div>
         </div>
       </footer>
 

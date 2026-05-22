@@ -26,6 +26,82 @@ const DAYS = [
 ];
 const ADMIN_CREDENTIALS = { username: "admin", password: "jem2026" };
 
+// ── Gallery Images ─────────────────────────────────────────────────────────
+const GALLERY_IMAGES = [
+  {
+    id: 1,
+    url: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800",
+    category: "Community",
+    caption: "Youth fellowship after Sunday service",
+  },
+  {
+    id: 2,
+    url: "https://images.unsplash.com/photo-1517457372512-b7e3b0f5b7a4?w=800",
+    category: "Celebrations",
+    caption: "Birthday celebration with cake and joy",
+  },
+  {
+    id: 3,
+    url: "https://images.unsplash.com/photo-1527525448966-9f1f5f2f8f3e?w=800",
+    category: "Worship",
+    caption: "Passionate worship during youth night",
+  },
+  {
+    id: 4,
+    url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800",
+    category: "Events",
+    caption: "Community outreach program",
+  },
+  {
+    id: 5,
+    url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800",
+    category: "Celebrations",
+    caption: "Group birthday photo with friends",
+  },
+  {
+    id: 6,
+    url: "https://images.unsplash.com/photo-1519834785169-98be25ec3f84?w=800",
+    category: "Community",
+    caption: "Youth leaders planning the next event",
+  },
+  {
+    id: 7,
+    url: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800",
+    category: "Worship",
+    caption: "Hands raised in worship",
+  },
+  {
+    id: 8,
+    url: "https://images.unsplash.com/photo-1491438590914-bc09fcaaf77f?w=800",
+    category: "Events",
+    caption: "Annual youth conference 2025",
+  },
+  {
+    id: 9,
+    url: "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=800",
+    category: "Celebrations",
+    caption: "Surprise birthday for one of our legends",
+  },
+  {
+    id: 10,
+    url: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
+    category: "Community",
+    caption: "Team building and games day",
+  },
+  {
+    id: 11,
+    url: "https://images.unsplash.com/photo-1518609878375-8f3c8f2f8f3e?w=800",
+    category: "Worship",
+    caption: "Choir practice before service",
+  },
+  {
+    id: 12,
+    url: "https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=800",
+    category: "Events",
+    caption: "Mission trip to the village",
+  },
+];
+
 function getLastMonday(year, month) {
   const last = new Date(year, month + 1, 0);
   const dow = last.getDay();
@@ -733,6 +809,10 @@ export default function App() {
     "/images/New5.png",
   ];
   const [heroIndex, setHeroIndex] = useState(0);
+
+  // Gallery state
+  const [galleryFilter, setGalleryFilter] = useState("All");
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState(null);
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroIndex((i) => (i + 1) % heroImages.length);
@@ -949,7 +1029,7 @@ export default function App() {
             <div style={{ fontWeight:900, fontSize:18 }}>JEM YOUTHS</div>
           </a>
           <div style={{ display:"flex", alignItems:"center", gap:4, fontSize:14, fontWeight:600 }}>
-            {[{label:"Home", href:"#hero"}, {label:"About", href:"#about"}, {label:"Roster", href:"#roster"}, {label:"Register", href:"#register"}, {label:"Give", href:"#give"}].map(item => (
+            {[{label:"Home", href:"#hero"}, {label:"Gallery", href:"#gallery"}, {label:"About", href:"#about"}, {label:"Roster", href:"#roster"}, {label:"Register", href:"#register"}, {label:"Give", href:"#give"}].map(item => (
               <a key={item.label} href={item.href} className="nav-link" style={{ padding:"8px 14px", color:"#cbd5e1", textDecoration:"none", transition:"all 0.2s" }}>{item.label}</a>
             ))}
             <button onClick={handleAdminButtonClick} className="nav-link" style={{ padding:"8px 16px", marginLeft:8, background:"linear-gradient(135deg,#7c3aed,#0ea5e9)", border:"none", color:"#fff", borderRadius:8, fontWeight:700, cursor:"pointer", fontSize:13 }}>Admin</button>
@@ -2326,6 +2406,162 @@ export default function App() {
         </div>
       </section>
 
+      {/* ── GALLERY ───────────────────────────────────────────── */}
+      <section id="gallery" style={{ background:"#0b0120", padding:"5rem 1.5rem", position:"relative", zIndex:2, borderTop:"1px solid rgba(124,58,237,0.15)" }}>
+        <div style={{ maxWidth:1200, margin:"0 auto" }}>
+          <div style={{ textAlign:"center", marginBottom:"2.5rem" }}>
+            <div style={{ fontSize:12, color:"#7c3aed", fontWeight:700, letterSpacing:"0.12em", marginBottom:8 }}>📸 MOMENTS</div>
+            <h2 style={{ fontSize:"clamp(1.8rem,5vw,2.5rem)", fontWeight:900, color:"#fff", marginBottom:"0.75rem" }}>Our Gallery</h2>
+            <p style={{ color:"#94a3b8", fontSize:15, maxWidth:520, margin:"0 auto" }}>
+              Capturing the joy, faith, and beautiful memories of our JEM Youths family.
+            </p>
+          </div>
+
+          {/* Filter Tabs */}
+          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:"2rem", flexWrap:"wrap" }}>
+            {["All", "Celebrations", "Community", "Worship", "Events"].map(cat => (
+              <button
+                key={cat}
+                onClick={() => setGalleryFilter(cat)}
+                style={{
+                  padding:"8px 18px",
+                  borderRadius:999,
+                  border:"1px solid",
+                  fontSize:13,
+                  fontWeight:600,
+                  cursor:"pointer",
+                  transition:"all 0.2s",
+                  background: galleryFilter === cat ? "linear-gradient(135deg,#7c3aed,#0ea5e9)" : "transparent",
+                  color: galleryFilter === cat ? "#fff" : "#94a3b8",
+                  borderColor: galleryFilter === cat ? "transparent" : "rgba(167,139,250,0.3)",
+                }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Image Grid */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:16 }}>
+            {GALLERY_IMAGES.filter(img => galleryFilter === "All" || img.category === galleryFilter).map(img => (
+              <div
+                key={img.id}
+                onClick={() => setSelectedGalleryImage(img)}
+                style={{
+                  position:"relative",
+                  borderRadius:16,
+                  overflow:"hidden",
+                  cursor:"pointer",
+                  boxShadow:"0 4px 20px rgba(0,0,0,0.3)",
+                  transition:"transform 0.3s ease, box-shadow 0.3s ease",
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = "scale(1.02)";
+                  e.currentTarget.style.boxShadow = "0 10px 30px rgba(124,58,237,0.3)";
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = "scale(1)";
+                  e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)";
+                }}
+              >
+                <img
+                  src={img.url}
+                  alt={img.caption}
+                  style={{ width:"100%", height:260, objectFit:"cover", display:"block" }}
+                />
+                <div style={{
+                  position:"absolute",
+                  bottom:0,
+                  left:0,
+                  right:0,
+                  background:"linear-gradient(to top, rgba(0,0,0,0.75), transparent)",
+                  padding:"1rem",
+                  color:"#fff",
+                  fontSize:13,
+                  fontWeight:600,
+                }}>
+                  {img.caption}
+                </div>
+                <div style={{
+                  position:"absolute",
+                  top:12,
+                  right:12,
+                  background:"rgba(124,58,237,0.9)",
+                  color:"#fff",
+                  fontSize:10,
+                  padding:"2px 10px",
+                  borderRadius:999,
+                  fontWeight:700,
+                  letterSpacing:"0.5px",
+                }}>
+                  {img.category}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery Modal */}
+      {selectedGalleryImage && (
+        <div
+          onClick={() => setSelectedGalleryImage(null)}
+          style={{
+            position:"fixed",
+            inset:0,
+            background:"rgba(0,0,0,0.9)",
+            zIndex:1000,
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            padding:20,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              maxWidth:900,
+              width:"100%",
+              background:"#111",
+              borderRadius:20,
+              overflow:"hidden",
+              position:"relative",
+            }}
+          >
+            <img
+              src={selectedGalleryImage.url}
+              alt={selectedGalleryImage.caption}
+              style={{ width:"100%", maxHeight:"70vh", objectFit:"contain", display:"block" }}
+            />
+            <div style={{ padding:20, textAlign:"center" }}>
+              <p style={{ fontSize:16, color:"#fff", margin:0, fontWeight:600 }}>{selectedGalleryImage.caption}</p>
+              <p style={{ fontSize:13, color:"#64748b", marginTop:4 }}>{selectedGalleryImage.category}</p>
+            </div>
+            <button
+              onClick={() => setSelectedGalleryImage(null)}
+              style={{
+                position:"absolute",
+                top:16,
+                right:16,
+                background:"rgba(255,255,255,0.1)",
+                border:"none",
+                color:"#fff",
+                width:36,
+                height:36,
+                borderRadius:"50%",
+                fontSize:20,
+                cursor:"pointer",
+                display:"flex",
+                alignItems:"center",
+                justifyContent:"center",
+              }}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── ABOUT ───────────────────────────────────────────── */}
       <section id="about" style={{ background:"#0b0120", padding:"5rem 1.5rem", position:"relative", zIndex:2, borderTop:"1px solid rgba(124,58,237,0.15)" }}>
         <div style={{ maxWidth:820, margin:"0 auto", textAlign:"center" }}>
@@ -2382,6 +2618,7 @@ export default function App() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 14.5 }}>
                 <a href="#hero" style={{ color: "#94a3b8", textDecoration: "none" }}>Home</a>
+                <a href="#gallery" style={{ color: "#94a3b8", textDecoration: "none" }}>Gallery</a>
                 <a href="#about" style={{ color: "#94a3b8", textDecoration: "none" }}>Our Story</a>
                 <a href="#roster" style={{ color: "#94a3b8", textDecoration: "none" }}>Birthday Roster</a>
                 <a href="#register" style={{ color: "#94a3b8", textDecoration: "none" }}>Get Registered</a>
